@@ -18,6 +18,9 @@
 
 ProGrab is a minimal GUI around the excellent [yt-dlp](https://github.com/yt-dlp/yt-dlp): paste a video URL, see the thumbnail/title/duration, pick a quality, and watch the download button itself turn into a progress bar.
 
+<img width="741" height="660" alt="prograb" src="https://github.com/user-attachments/assets/4ac3f352-ba9f-4f60-aa4e-540dccb28945" />
+
+
 ## Features
 
 - 🎯 **Simple flow** — paste, analyze, download. The big button becomes the progress bar (percent, size, speed, ETA), click it mid-download to cancel, and it turns green when done.
