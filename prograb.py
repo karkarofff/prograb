@@ -28,7 +28,7 @@ except ImportError:
     sys.exit(1)
 
 APP_NAME = "ProGrab"
-APP_VERSION = "0.2.0"
+APP_VERSION = "0.2.1"
 AUTHOR = "Karkarofff"
 AUTHOR_URL = "https://github.com/karkarofff"
 UPDATE_URL = ("https://raw.githubusercontent.com/karkarofff/prograb/"
@@ -522,6 +522,8 @@ class ProGrab(ctk.CTk):
     def _show_info(self, info, thumb_img):
         self._info = info
         self.go_btn.configure(state="normal", text="Analyser")
+        if self._proc is None:
+            self.action.set_idle()
         dur = info.get("duration") or 0
         m, s = divmod(int(dur), 60)
         h, m = divmod(m, 60)

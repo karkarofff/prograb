@@ -1,5 +1,5 @@
-('C:\\Users\\Utilisateur\\Documents\\mes projets\\youtube '
- 'downloader\\build\\ProGrab\\PYZ-00.pyz',
+('C:\\Users\\Utilisateur\\Documents\\mes '
+ 'projets\\prograb\\build\\ProGrab\\PYZ-00.pyz',
  [('PIL',
    'C:\\Users\\Utilisateur\\AppData\\Local\\Programs\\Python\\Python314\\Lib\\site-packages\\PIL\\__init__.py',
    'PYMODULE'),
