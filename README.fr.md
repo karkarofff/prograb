@@ -18,6 +18,9 @@
 
 ProGrab est une interface minimaliste autour de l'excellent [yt-dlp](https://github.com/yt-dlp/yt-dlp) : colle l'URL d'une vidéo, vois la miniature/le titre/la durée, choisis une qualité, et regarde le bouton de téléchargement se transformer lui-même en barre de progression.
 
+<img width="741" height="660" alt="prograb" src="https://github.com/user-attachments/assets/b87c40ca-f397-4ebe-bcc4-964f40f5eacd" />
+
+
 ## Fonctionnalités
 
 - 🎯 **Flux simple** — coller, analyser, télécharger. Le gros bouton devient la barre de progression (pourcentage, taille, vitesse, temps restant), un clic en plein téléchargement annule, et il passe au vert quand c'est fini.
