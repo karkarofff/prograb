@@ -28,7 +28,7 @@ except ImportError:
     sys.exit(1)
 
 APP_NAME = "ProGrab"
-APP_VERSION = "0.2.3"
+APP_VERSION = "0.3.0"
 AUTHOR = "Karkarofff"
 AUTHOR_URL = "https://github.com/karkarofff"
 UPDATE_URL = ("https://raw.githubusercontent.com/karkarofff/prograb/"
@@ -68,7 +68,8 @@ FFMPEG_URL = ("https://github.com/yt-dlp/FFmpeg-Builds/releases/latest/"
 DENO_URL = ("https://github.com/denoland/deno/releases/latest/"
             "download/deno-x86_64-pc-windows-msvc.zip")
 
-QUALITIES = ["Max", "1080p", "720p", "480p", "MP3 (audio)"]
+TRANSCRIPT = "Transcript (texte)"
+QUALITIES = ["Max", "1080p", "720p", "480p", "MP3 (audio)", TRANSCRIPT]
 MP4 = ["--merge-output-format", "mp4"]
 # vcodec^=avc1 = H.264, acodec^=mp4a = AAC : le combo lisible partout.
 # YouTube fournit toujours du H.264 jusqu'en 1080p ; au-dela (Max),
@@ -577,6 +578,71 @@ class ProGrab(ctk.CTk):
         self.status_lbl.configure(text="")
 
     # ================= téléchargement =================
+    def _pick_sub_lang(self):
+        """Choisit la meilleure langue de sous-titres : manuels d'abord
+        (fr puis en puis n'importe), auto-générés sinon (langue
+        d'origine de préférence)."""
+        info = self._info or {}
+        manual = list((info.get("subtitles") or {}).keys())
+        auto = list((info.get("automatic_captions") or {}).keys())
+        for pref in ("fr", "fr-FR", "en", "en-US", "en-GB"):
+            if pref in manual:
+                return pref
+        if manual:
+            return manual[0]
+        for pref in ("fr", "fr-orig", "en-orig", "en", "en-US"):
+            if pref in auto:
+                return pref
+        for l in auto:
+            if l.endswith("-orig"):
+                return l
+        return auto[0] if auto else None
+
+    @staticmethod
+    def _subs_to_text(path):
+        """Convertit un .srt/.vtt en texte lisible : sans numéros,
+        timestamps ni balises, doublons consécutifs dédupliqués."""
+        out, prev = [], None
+        raw = open(path, encoding="utf-8", errors="replace").read()
+        for line in raw.splitlines():
+            s = line.strip()
+            if (not s or s.isdigit() or "-->" in s
+                    or s.startswith(("WEBVTT", "Kind:", "Language:"))):
+                continue
+            s = re.sub(r"<[^>]+>", "", s).strip()
+            if s and s != prev:
+                out.append(s)
+                prev = s
+        return "\n".join(out)
+
+    def _finish_transcript(self, tmpdir):
+        import glob
+        import shutil
+        made = 0
+        for path in (glob.glob(os.path.join(tmpdir, "*.srt"))
+                     + glob.glob(os.path.join(tmpdir, "*.vtt"))):
+            try:
+                text = self._subs_to_text(path)
+            except OSError:
+                continue
+            if not text.strip():
+                continue
+            name = os.path.splitext(os.path.basename(path))[0]
+            root, lang = os.path.splitext(name)
+            if root and 0 < len(lang) <= 9:
+                label = f"{root} (transcript{lang.replace('.', ' ')})"
+            else:
+                label = f"{name} (transcript)"
+            try:
+                with open(os.path.join(self.out_dir, label + ".txt"),
+                          "w", encoding="utf-8") as f:
+                    f.write(text)
+                made += 1
+            except OSError:
+                pass
+        shutil.rmtree(tmpdir, ignore_errors=True)
+        return made > 0
+
     def _save_quality(self, value):
         cfg = load_config()
         cfg["quality"] = value
@@ -605,7 +671,9 @@ class ProGrab(ctk.CTk):
             return
         url = self.url_var.get().strip()
         q = self.quality.get()
-        cmd = self._ytdlp_base() + [
+        transcript = (q == TRANSCRIPT)
+        tmpdir = os.path.join(self.out_dir, ".prograb_subs")
+        base = self._ytdlp_base() + [
                "--no-playlist", "--windows-filenames",
                "--force-overwrites",
                "--ffmpeg-location", BIN_DIR, "--newline", "--progress",
@@ -613,9 +681,23 @@ class ProGrab(ctk.CTk):
                "PG|%(progress._percent_str)s"
                "|%(progress._total_bytes_str)s"
                "|%(progress._total_bytes_estimate_str)s"
-               "|%(progress._speed_str)s|%(progress._eta_str)s",
-               "-o", os.path.join(self.out_dir, "%(title)s.%(ext)s")]
-        cmd += FORMATS[q] + [url]
+               "|%(progress._speed_str)s|%(progress._eta_str)s"]
+        if transcript:
+            lang = self._pick_sub_lang()
+            if not lang:
+                messagebox.showinfo(
+                    APP_NAME, "Aucun sous-titre ou transcript n'est "
+                              "disponible pour cette vidéo.")
+                return
+            os.makedirs(tmpdir, exist_ok=True)
+            cmd = base + ["--skip-download", "--write-subs",
+                          "--write-auto-subs", "--sub-langs", lang,
+                          "--convert-subs", "srt", "-P", tmpdir,
+                          "-o", "%(title)s.%(ext)s", url]
+        else:
+            cmd = base + ["-o", os.path.join(self.out_dir,
+                                             "%(title)s.%(ext)s")]
+            cmd += FORMATS[q] + [url]
 
         self.action.set_progress(0, "Démarrage...")
 
@@ -687,6 +769,10 @@ class ProGrab(ctk.CTk):
                     pass
             cancelled = self._proc is None
             self._proc = None
+            if transcript and code == 0 and not cancelled:
+                if not self._finish_transcript(tmpdir):
+                    code = -2
+
             def done():
                 if cancelled:
                     self.action.set_idle()
@@ -698,6 +784,11 @@ class ProGrab(ctk.CTk):
                         os.startfile(self.out_dir)
                     except OSError:
                         pass
+                elif code == -2:
+                    self.action.set_error()
+                    self.status_lbl.configure(
+                        text="Aucun sous-titre exploitable n'a été "
+                             "trouvé pour cette vidéo.")
                 else:
                     self.action.set_error()
                     self.status_lbl.configure(
