@@ -28,7 +28,7 @@ except ImportError:
     sys.exit(1)
 
 APP_NAME = "ProGrab"
-APP_VERSION = "0.2.2"
+APP_VERSION = "0.2.3"
 AUTHOR = "Karkarofff"
 AUTHOR_URL = "https://github.com/karkarofff"
 UPDATE_URL = ("https://raw.githubusercontent.com/karkarofff/prograb/"
@@ -238,6 +238,7 @@ class ProGrab(ctk.CTk):
         self._proc = None
         self._thumb = None
         self._ready = False
+        self._update_available = False
 
         self._build()
         try:
@@ -376,6 +377,7 @@ class ProGrab(ctk.CTk):
                 return tuple(int(x) for x in v.split("."))
             if ver(latest) > ver(APP_VERSION):
                 def notify():
+                    self._update_available = True
                     self.status_lbl.configure(
                         text=f"🔵 Nouvelle version disponible "
                              f"({latest}) — clique ici pour la "
@@ -385,6 +387,13 @@ class ProGrab(ctk.CTk):
                         "<Button-1>",
                         lambda e: webbrowser.open(
                             data.get("url", RELEASES_URL)))
+                    if messagebox.askyesno(
+                            APP_NAME,
+                            f"Une nouvelle version de {APP_NAME} est "
+                            f"disponible !\n\n{APP_VERSION}  →  "
+                            f"{latest}\n\nOuvrir la page de "
+                            f"téléchargement ?"):
+                        webbrowser.open(data.get("url", RELEASES_URL))
                 self.after(0, notify)
             elif not silent:
                 self.after(0, lambda: messagebox.showinfo(
@@ -460,11 +469,14 @@ class ProGrab(ctk.CTk):
             except Exception:
                 pass
             self._ready = True
-            self.after(0, lambda: (self.setup_frame.place_forget(),
-                                   self._lock_ui(False),
-                                   self.status_lbl.configure(
-                                       text="Prêt. Colle un lien pour "
-                                            "commencer.")))
+
+            def setup_done():
+                self.setup_frame.place_forget()
+                self._lock_ui(False)
+                if not self._update_available:
+                    self.status_lbl.configure(
+                        text="Prêt. Colle un lien pour commencer.")
+            self.after(0, setup_done)
         except Exception as e:
             self._setup_status(f"Échec de la préparation : {e}\n"
                                "Vérifie ta connexion et relance l'app.", 0)
