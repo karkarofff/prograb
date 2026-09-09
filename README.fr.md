@@ -26,8 +26,10 @@ ProGrab est une interface minimaliste autour de l'excellent [yt-dlp](https://git
 - 🎯 **Flux simple** — coller, analyser, télécharger. Le gros bouton devient la barre de progression (pourcentage, taille, vitesse, temps restant), un clic en plein téléchargement annule, et il passe au vert quand c'est fini.
 - 🎞 **Des vrais MP4** — les vidéos sont forcées en H.264 + AAC dès que disponible : les fichiers se lisent partout (vieilles télés comprises), pas seulement dans VLC.
 - 🎵 **Mode MP3** — extraction audio seule, convertie en MP3.
+- - 📝 **Mode Transcript** — récupère les sous-titres de la vidéo (manuels en priorité, auto-générés sinon) et les convertit en fichier .txt propre : sans timestamps, sans lignes répétées, juste du texte lisible. Parfait pour donner une vidéo à une IA ou survoler une conférence.
 - 🔁 **Auto-entretenu** — au premier lancement, ProGrab récupère ses outils (yt-dlp, ffmpeg, deno) dans son dossier de données, puis **yt-dlp se met à jour tout seul en silence à chaque démarrage**. Quand les sites changent, l'app se répare seule. ProGrab prévient aussi quand une nouvelle version de lui-même est disponible.
 - 🌑 **Interface sombre moderne** — CustomTkinter, coins arrondis partout, zéro fouillis.
+- La qualité choisie est mémorisée comme réglage par défaut entre les sessions.
 
 ## Installation
 
