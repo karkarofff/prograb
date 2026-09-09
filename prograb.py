@@ -28,7 +28,7 @@ except ImportError:
     sys.exit(1)
 
 APP_NAME = "ProGrab"
-APP_VERSION = "0.2.1"
+APP_VERSION = "0.2.2"
 AUTHOR = "Karkarofff"
 AUTHOR_URL = "https://github.com/karkarofff"
 UPDATE_URL = ("https://raw.githubusercontent.com/karkarofff/prograb/"
@@ -232,6 +232,8 @@ class ProGrab(ctk.CTk):
         cfg = load_config()
         self.out_dir = cfg.get("out_dir") or os.path.join(
             os.path.expanduser("~"), "Downloads")
+        q = cfg.get("quality")
+        self._saved_quality = q if q in QUALITIES else "1080p"
         self._info = None
         self._proc = None
         self._thumb = None
@@ -305,8 +307,9 @@ class ProGrab(ctk.CTk):
             self.opts, values=QUALITIES, height=38, corner_radius=10,
             fg_color=BG2, selected_color=ACCENT,
             selected_hover_color=ACCENT_H, unselected_color=BG2,
-            unselected_hover_color=BG3, font=("Segoe UI", 12))
-        self.quality.set("1080p")
+            unselected_hover_color=BG3, font=("Segoe UI", 12),
+            command=self._save_quality)
+        self.quality.set(self._saved_quality)
         self.quality.pack(fill="x", pady=(6, 12))
 
         folder_row = ctk.CTkFrame(self.opts, fg_color="transparent")
@@ -562,6 +565,11 @@ class ProGrab(ctk.CTk):
         self.status_lbl.configure(text="")
 
     # ================= téléchargement =================
+    def _save_quality(self, value):
+        cfg = load_config()
+        cfg["quality"] = value
+        save_config(cfg)
+
     def _pick_folder(self):
         folder = filedialog.askdirectory(initialdir=self.out_dir)
         if folder:
